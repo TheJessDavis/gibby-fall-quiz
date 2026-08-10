@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=900, initial-scale=1.0" />
+<title>Build Your Fall Schedule · The Gibby at The Everett</title>
+<style>
+  :root {
+    --lavender:#D1D0E0;
+    --pink:#F69EA2;
+    --orange:#DE723A;
+    --orange-dk:#c8632d;
+    --olive:#B7AE39;
+    --plum:#2F022D;
+    --plum-80:rgba(47,2,45,0.80);
+    --plum-60:rgba(47,2,45,0.60);
+    --plum-40:rgba(47,2,45,0.40);
+    --plum-12:rgba(47,2,45,0.12);
+    --plum-06:rgba(47,2,45,0.06);
+    --paper:#FBF8F5;
+    --w:900px;
+    --h:520px;
+  }
+  * { box-sizing:border-box; }
+  html,body {
+    margin:0; padding:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    color:var(--plum);
+    background:var(--lavender);
+    width:var(--w); height:var(--h);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage {
+    width:var(--w); height:var(--h);
+    background:var(--paper);
+    display:flex; flex-direction:column;
+    overflow:hidden; position:relative;
+  }
+  .stage::before {
+    content:""; position:absolute; inset:34px 0 0 0;
+    background:
+      radial-gradient(circle 260px at 97% 3%, rgba(246,158,162,0.16), transparent 60%),
+      radial-gradient(circle 260px at 3% 97%, rgba(183,174,57,0.13), transparent 60%);
+    pointer-events:none;
+  }
+
+  /* Top bar */
+  .topbar {
+    flex:0 0 auto; height:34px;
+    background:var(--plum); color:var(--paper);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 16px; position:relative; z-index:3;
+  }
+  .brand { font-size:10.5px; letter-spacing:0.15em; text-transform:uppercase; font-weight:800; }
+  .brand span { opacity:0.55; font-weight:500; margin-left:7px; }
+  .progress { display:flex; align-items:center; gap:9px; font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; opacity:0.85; }
+  .dots { display:flex; gap:5px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:rgba(251,248,245,0.20); transition:all .25s; }
+  .dot.done { background:var(--olive); }
+  .dot.current { background:var(--orange); box-shadow:0 0 0 2px rgba(222,114,58,0.35); }
+
+  /* Screens */
+  .screen { flex:1 1 auto; overflow:hidden; display:none; min-height:0; position:relative; z-index:1; }
+  .screen.active { display:flex; }
+
+  /* Splash */
+  .splash { padding:26px 34px; flex-direction:column; justify-content:center; gap:14px; animation:fade .3s ease; }
+  .splash .kicker { font-size:10px; letter-spacing:0.18em; text-transform:uppercase; font-weight:800; color:var(--orange); }
+  .splash h1 { margin:0; font-size:34px; line-height:1.04; letter-spacing:-0.02em; max-width:640px; }
+  .splash h1 .accent { color:var(--orange); }
+  .splash .lede { margin:0; font-size:14px; line-height:1.55; color:var(--plum-80); max-width:600px; }
+  .splash .lede b { color:var(--plum); font-weight:700; }
+  .splash-row { display:flex; align-items:center; gap:14px; margin-top:4px; }
+  .splash-hint { font-size:11.5px; color:var(--plum-60); font-weight:600; }
+
+  /* Buttons */
+  .btn {
+    display:inline-flex; align-items:center; gap:7px; border:0;
+    background:var(--orange); color:var(--paper);
+    font-family:inherit; font-size:13px; font-weight:800; letter-spacing:0.01em;
+    padding:11px 20px; border-radius:999px; cursor:pointer;
+    transition:transform .1s, background .15s, box-shadow .15s;
+    box-shadow:0 4px 12px rgba(222,114,58,0.32); white-space:nowrap; text-decoration:none;
+  }
+  .btn:hover { background:var(--orange-dk); transform:translateY(-1px); }
+  .btn:active { transform:translateY(0); }
+  .btn-ghost {
+    background:transparent; color:var(--plum); border:1.5px solid var(--plum);
+    box-shadow:none; padding:9px 16px; font-size:12px; font-family:inherit; font-weight:800;
+    border-radius:999px; cursor:pointer; transition:background .15s; text-decoration:none;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-ghost:hover { background:var(--plum-06); }
+
+  /* Question */
+  .question { padding:16px 28px 18px; flex-direction:column; gap:12px; animation:fade .25s ease; }
+  .q-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .q-label { font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:var(--orange); }
+  .q-back { font-size:11px; font-weight:800; color:var(--plum-40); background:none; border:0; cursor:pointer; font-family:inherit; padding:2px 4px; }
+  .q-back:hover { color:var(--plum); }
+  .q-back[disabled] { visibility:hidden; }
+  .q-prompt { font-size:22px; font-weight:800; line-height:1.15; letter-spacing:-0.015em; margin:0; }
+
+  .tiles { display:grid; gap:9px; flex:1 1 auto; min-height:0; }
+  .tiles.cols-2 { grid-template-columns:repeat(2,1fr); }
+  .tiles.cols-3 { grid-template-columns:repeat(3,1fr); }
+  .tile {
+    background:#fff; border:1.6px solid var(--plum-12); border-radius:13px;
+    padding:11px 14px; cursor:pointer; text-align:left; font-family:inherit; color:var(--plum);
+    display:flex; flex-direction:column; gap:3px; justify-content:center;
+    transition:transform .1s, border-color .15s, box-shadow .15s, background .15s;
+    min-height:0;
+  }
+  .tile:hover { transform:translateY(-2px); border-color:var(--orange); background:#fdf2ea; box-shadow:0 5px 14px rgba(47,2,45,0.10); }
+  .tile.selected { border-color:var(--orange); background:#fdeee3; box-shadow:0 0 0 2px rgba(222,114,58,0.30); }
+  .tile .ic { font-size:19px; line-height:1; margin-bottom:1px; }
+  .tile .lab { font-size:14.5px; font-weight:800; line-height:1.18; }
+  .tile .sub { font-size:11px; color:var(--plum-60); line-height:1.35; font-weight:500; }
+
+  /* Results */
+  .results { padding:16px 22px 16px 26px; flex-direction:row; gap:18px; animation:fade .3s ease; }
+  .res-left { flex:0 0 262px; display:flex; flex-direction:column; gap:7px; min-width:0; }
+  .res-kicker { font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--orange); font-weight:800; }
+  .res-title { margin:0; font-size:25px; line-height:1.06; letter-spacing:-0.02em; }
+  .res-diag { font-size:12.5px; line-height:1.5; color:var(--plum-80); margin-top:1px; }
+  .res-recap { font-size:11px; line-height:1.5; color:var(--plum-60); background:#fff; border:1.4px solid var(--plum-12); border-radius:10px; padding:9px 11px; }
+  .res-recap b { color:var(--plum); font-weight:700; }
+  .res-actions { display:flex; gap:8px; margin-top:auto; padding-top:8px; }
+  .res-actions .btn { padding:10px 16px; font-size:12px; }
+
+  .res-right { flex:1 1 auto; display:flex; flex-direction:column; gap:7px; min-width:0; min-height:0; }
+  .res-right-head { font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--plum-60); font-weight:800; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:9px; flex:1 1 auto; min-height:0; }
+  .card {
+    background:#fff; border:1.6px solid var(--plum-12); border-radius:12px; padding:10px 12px;
+    display:flex; flex-direction:column; gap:3px; text-decoration:none; color:var(--plum);
+    transition:transform .1s, border-color .15s, box-shadow .15s; min-height:0; position:relative; overflow:hidden;
+  }
+  .card:hover { transform:translateY(-2px); border-color:var(--orange); box-shadow:0 6px 16px rgba(47,2,45,0.12); }
+  .card .toprow { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .card .chip { font-size:8.5px; letter-spacing:0.10em; text-transform:uppercase; font-weight:800; color:#fff; padding:2px 7px; border-radius:999px; }
+  .card .seats { font-size:9px; font-weight:800; letter-spacing:0.03em; color:var(--orange); text-transform:uppercase; }
+  .card .cname { font-size:13.5px; font-weight:800; line-height:1.12; letter-spacing:-0.01em; }
+  .card .cmeta { font-size:10.5px; color:var(--plum-60); font-weight:700; }
+  .card .cblurb { font-size:10.5px; color:var(--plum-80); line-height:1.4; }
+
+  @keyframes fade { from { opacity:0; transform:translateY(5px);} to { opacity:1; transform:translateY(0);} }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="topbar">
+    <div class="brand">The Gibby <span>Find Your Fall Class</span></div>
+    <div class="progress"><span id="progressLabel">Fall 2026</span><div class="dots" id="dots"></div></div>
+  </div>
+
+  <!-- Splash -->
+  <section class="screen splash active" id="splash">
+    <div class="kicker">Fall 2026 · The Everett</div>
+    <h1>What should you <span class="accent">make</span> this fall?</h1>
+    <p class="lede">The fall calendar runs more than fifty workshops. That is a lot to scroll. Answer five short questions about what you are actually after, and we will hand you the <b>three or four worth signing up for</b>.</p>
+    <div class="splash-row">
+      <button class="btn" id="startBtn">Find my classes</button>
+      <span class="splash-hint">Five questions. Real classes at the end.</span>
+    </div>
+  </section>
+
+  <!-- Question -->
+  <section class="screen question" id="questionScreen">
+    <div class="q-head">
+      <div class="q-label" id="qLabel"></div>
+      <button class="q-back" id="backBtn">&#8592; back</button>
+    </div>
+    <h2 class="q-prompt" id="qPrompt"></h2>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <!-- Results -->
+  <section class="screen results" id="results">
+    <div class="res-left">
+      <div class="res-kicker">Your shortlist</div>
+      <h2 class="res-title" id="resTitle"></h2>
+      <p class="res-diag" id="resDiag"></p>
+      <div class="res-recap" id="resRecap"></div>
+      <div class="res-actions">
+        <a class="btn" id="seeAll" href="https://theeverett.org/artworkshops" target="_blank" rel="noopener noreferrer">Register</a>
+        <button class="btn-ghost" id="replayBtn">Start over</button>
+      </div>
+    </div>
+    <div class="res-right">
+      <div class="res-right-head" id="resRightHead">Your top matches</div>
+      <div class="cards" id="cards"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  // ---- The real Fall 2026 lineup at The Everett ----
+  // m: medium  s: sub-style  f: one|series  v: vibe/job tags  sh: start hour (24h)
+  var CLASSES = [
+    {n:"Paint Your Pet",i:"Christin Smiertka",d:"Sep 18",iso:"2026-09-18",t:"Fri 6:00-8:30pm",sh:18,m:"paint",s:"real",f:"one",v:["solo","social"],b:"Bring a photo, leave with an acrylic portrait of your dog or cat."},
+    {n:"Paint Your Pet",i:"Christin Smiertka",d:"Oct 5",iso:"2026-10-05",t:"Mon 6:00-8:30pm",sh:18,m:"paint",s:"real",f:"one",v:["solo","social"],b:"Bring a photo, leave with an acrylic portrait of your dog or cat."},
+    {n:"Paint Your Pet",i:"Christin Smiertka",d:"Nov 7",iso:"2026-11-07",t:"Sat 6:00-8:30pm",sh:18,m:"paint",s:"real",f:"one",v:["solo","social"],b:"Bring a photo, leave with an acrylic portrait of your dog or cat."},
+    {n:"Paint Your Pet Ornament",i:"Christin Smiertka",d:"Dec 5",iso:"2026-12-05",t:"Sat 10:00am-12:30pm",sh:10,m:"paint",s:"real",f:"one",v:["solo","social"],b:"The same pet, on a keepsake wood ornament for the tree."},
+    {n:"Beginner Stretch Bracelets",i:"Danielle Sims",d:"Sep 12",iso:"2026-09-12",t:"Sat 9:30-10:30am",sh:9,m:"jewelry",s:"bracelets",f:"one",v:["family"],b:"One hour, a pile of beads, one finished stretchy bracelet."},
+    {n:"Beaded Pumpkin Earrings",i:"Danielle Sims",d:"Sep 25",iso:"2026-09-25",t:"Fri 5:30-7:30pm",sh:17,m:"jewelry",s:"earrings",f:"one",v:["solo","social"],b:"Brick stitch your way to a tiny pair of pumpkins for your ears."},
+    {n:"Superduo Bead Earrings",i:"Danielle Sims",d:"Oct 9",iso:"2026-10-09",t:"Fri 5:30-7:30pm",sh:17,m:"jewelry",s:"earrings",f:"one",v:["solo","social"],b:"Two-hole beads become dimensional little spheres in your colors."},
+    {n:"Basic Stringing Bracelet",i:"Danielle Sims",d:"Oct 23",iso:"2026-10-23",t:"Fri 5:30-6:30pm",sh:17,m:"jewelry",s:"bracelets",f:"one",v:["family"],b:"Beads on a string, finished like a pro, done inside an hour."},
+    {n:"Beaded Poinsettia Earrings",i:"Danielle Sims",d:"Nov 16",iso:"2026-11-16",t:"Mon 5:00-7:00pm",sh:17,m:"jewelry",s:"earrings",f:"one",v:["solo","social"],b:"Festive floral earrings woven from Super Duo and seed beads."},
+    {n:"Fringe Santa Earrings",i:"Danielle Sims",d:"Dec 5",iso:"2026-12-05",t:"Sat 1:00-3:00pm",sh:13,m:"jewelry",s:"earrings",f:"one",v:["social"],b:"Brick stitch plus fringe equals dangly little Santas with movement."},
+    {n:"Crystal Tree Earrings",i:"Danielle Sims",d:"Dec 7",iso:"2026-12-07",t:"Mon 5:30-6:30pm",sh:17,m:"jewelry",s:"earrings",f:"one",v:["family"],b:"Wire wrap a pair of sparkly little trees in one relaxed hour."},
+    {n:"Fall Wreath Workshop",i:"Dawn Hunter",d:"Sep 11",iso:"2026-09-11",t:"Fri 6:00-8:30pm",sh:18,m:"seasonal",s:"decor",f:"one",v:["social"],b:"Build a front-door wreath worth showing off. Adults only."},
+    {n:"Pumpkin Stuffie",i:"Dawn Hunter",d:"Sep 18",iso:"2026-09-18",t:"Fri 5:30-8:00pm",sh:17,m:"seasonal",s:"family",f:"one",v:["family"],b:"A soft stuffed pumpkin, sewn and stuffed by small hands."},
+    {n:"Painted Gourd Bowl",i:"Dawn Hunter",d:"Oct 15",iso:"2026-10-15",t:"Thu 6:00-8:30pm",sh:18,m:"seasonal",s:"decor",f:"one",v:["social"],b:"Turn a humble gourd into a painted bowl you will actually use."},
+    {n:"Spooky Craft Night",i:"Dawn Hunter",d:"Oct 16",iso:"2026-10-16",t:"Fri 6:00-8:00pm",sh:18,m:"seasonal",s:"family",f:"one",v:["family","social"],b:"A little spooky, a lot of glue. Halloween craft night for kids."},
+    {n:"Owl Stick Mosaic",i:"Dawn Hunter",d:"Nov 19",iso:"2026-11-19",t:"Thu 6:00-8:30pm",sh:18,m:"seasonal",s:"decor",f:"one",v:["social"],b:"Sticks plus mosaic pieces plus patience equals one wise owl."},
+    {n:"Shabby Chic Christmas Trees",i:"Dawn Hunter",d:"Dec 5",iso:"2026-12-05",t:"Fri 6:00-8:30pm",sh:18,m:"seasonal",s:"decor",f:"one",v:["social"],b:"Rustic little trees for the mantel. Cozy, chic, cheerful."},
+    {n:"Beginner Leatherworking",i:"Gabriel Hurd",d:"Sep 5",iso:"2026-09-05",t:"Sat 1:00-3:00pm",sh:13,m:"wood",s:"leather",f:"one",v:["social"],b:"Stamping, tooling, stitching, punching. Meet the tools and the basics."},
+    {n:"Beginner Whittling",i:"Gabriel Hurd",d:"Sep 19",iso:"2026-09-19",t:"Sat 1:00-3:00pm",sh:13,m:"wood",s:"carving",f:"one",v:["social"],b:"Knife safety and the fundamental cuts. Yes, you actually get to whittle."},
+    {n:"Simple Chainmail Jewelry",i:"Gabriel Hurd",d:"Oct 3",iso:"2026-10-03",t:"Sat 1:00-3:00pm",sh:13,m:"jewelry",s:"other",f:"one",v:["social"],b:"Jump rings into chainmail. Start a necklace or earrings, finish at home."},
+    {n:"Leather Detail and Tooling",i:"Gabriel Hurd",d:"Oct 17",iso:"2026-10-17",t:"Sat 1:00-3:00pm",sh:13,m:"wood",s:"leather",f:"one",v:["solo","social"],b:"Tool a leather panel into a keychain or focal piece. Finished in class."},
+    {n:"Carving Faces and Details",i:"Gabriel Hurd",d:"Nov 7",iso:"2026-11-07",t:"Sat 1:00-3:00pm",sh:13,m:"wood",s:"carving",f:"one",v:["solo","social"],b:"Simple shapes become faces in wood. Leave with a carved piece."},
+    {n:"Basics of Hand Embroidery",i:"Harlee Light",d:"Starts Sep 24",iso:"2026-09-24",t:"Thu 5:30-7:30pm · 3 weeks",sh:17,m:"fiber",s:"embroidery",f:"series",v:["community","solo"],b:"Three weeks from your first stitch to a wearable piece you design."},
+    {n:"September Creators Club",i:"Heather Ford",d:"Starts Sep 8",iso:"2026-09-08",t:"Mon 5:30-7:00pm · 4 weeks",sh:17,m:"seasonal",s:"family",f:"series",v:["family","community"],b:"Four weeks of after-school making for the 7-to-13 crowd."},
+    {n:"Classical Realist Still Life",i:"Jason Weaver",d:"Oct 13",iso:"2026-10-13",t:"Tue-Thu 12:00-2:00pm · 3 days",sh:12,m:"paint",s:"real",f:"series",v:["solo","community"],b:"Three afternoons learning to paint a still life the old-master way."},
+    {n:"Stained Glass Series",i:"Jess Davis",d:"Starts Sep 3",iso:"2026-09-03",t:"Wed 6:30-8:30pm · 6 weeks",sh:18,m:"wood",s:"glass",f:"series",v:["community"],b:"Six weeks of cutting, foiling, and soldering your own glass panel."},
+    {n:"Rug Tufting Series",i:"Jess Davis",d:"Starts Oct 3",iso:"2026-10-03",t:"Sat 10:00am-12:00pm · 3 weeks",sh:10,m:"fiber",s:"tufting",f:"series",v:["community","social"],b:"The tufting gun counts as a power tool. Make a real rug over three Saturdays."},
+    {n:"Stained Glass Series",i:"Jess Davis",d:"Starts Oct 15",iso:"2026-10-15",t:"Thu 10:00am-12:00pm · 6 weeks",sh:10,m:"wood",s:"glass",f:"series",v:["community"],b:"Daytime version. Six weeks to one finished stained glass piece."},
+    {n:"Mom & Me: Fairy Wings",i:"Jess Davis",d:"Sep 16",iso:"2026-09-16",t:"Wed 10:30am-12:00pm",sh:10,m:"seasonal",s:"family",f:"one",v:["family"],b:"A grown-up and a kid make matching fairy wings. Ribbons everywhere."},
+    {n:"Mom & Me: Fairy Wings",i:"Jess Davis",d:"Sep 23",iso:"2026-09-23",t:"Wed 5:00-6:30pm",sh:17,m:"seasonal",s:"family",f:"one",v:["family"],b:"Evening version. A grown-up and a kid make matching fairy wings."},
+    {n:"Rug Tufting Series",i:"Jess Davis",d:"Starts Dec 3",iso:"2026-12-03",t:"Thu 6:30-8:30pm · 3 weeks",sh:18,m:"fiber",s:"tufting",f:"series",v:["community","social"],b:"Evening tufting. Big yarn, loud gun, a finished rug in three weeks."},
+    {n:"Junk Journal Basics",i:"Jess Kille",d:"Sep 5",iso:"2026-09-05",t:"Sat 10:00am-12:00pm",sh:10,m:"paper",s:"junk",f:"one",v:["solo","community"],b:"Build a one-signature journal from scratch. The gateway habit."},
+    {n:"Paper Pocket Treasures",i:"Jess Kille",d:"Sep 10",iso:"2026-09-10",t:"Thu 4:00-6:00pm",sh:16,m:"paper",s:"collage",f:"one",v:["solo"],b:"A tiny keepsake of images and bits that mean something to you."},
+    {n:"Collaging Landscapes",i:"Jess Kille",d:"Sep 17",iso:"2026-09-17",t:"Thu 4:30-6:30pm",sh:16,m:"paper",s:"collage",f:"one",v:["solo"],b:"Torn paper and texture become a landscape. Big impact, easy pieces."},
+    {n:"Intuitive Painting: Your Energy",i:"Jess Kille",d:"Oct 10",iso:"2026-10-10",t:"Sat 2:00-4:00pm",sh:14,m:"paint",s:"free",f:"one",v:["solo"],b:"No plan, no pressure. Paint whatever the mood tells you to."},
+    {n:"Starting an Altered Book",i:"Jess Kille",d:"Oct 22",iso:"2026-10-22",t:"Thu 6:30-8:30pm",sh:18,m:"paper",s:"altered",f:"one",v:["solo"],b:"Turn a thrift-store book into a journal by tearing, pocketing, decorating."},
+    {n:"Spooky Spell Book Journal",i:"Jess Kille",d:"Oct 24",iso:"2026-10-24",t:"Sat 10:00am-12:00pm",sh:10,m:"paper",s:"altered",f:"one",v:["solo","social"],b:"Craft a suitably witchy journal just in time for Halloween."},
+    {n:"Positivity Rocks",i:"Jess Kille",d:"Nov 7",iso:"2026-11-07",t:"Sat 10:00am-12:00pm",sh:10,m:"paint",s:"free",f:"one",v:["family","solo"],b:"Paint kind words on stones, fill a jar, keep or give the good vibes."},
+    {n:"Intuitive Painting: Grief",i:"Jess Kille",d:"Nov 21",iso:"2026-11-21",t:"Sat 10:00am-12:00pm",sh:10,m:"paint",s:"free",f:"one",v:["solo"],b:"A gentle, abstract painting session for quietly working through loss."},
+    {n:"Creating a Winter Journal",i:"Jess Kille",d:"Dec 3",iso:"2026-12-03",t:"Thu 4:30-6:30pm",sh:16,m:"paper",s:"junk",f:"one",v:["solo","community"],b:"A one-signature journal dressed in winter and holiday papers."},
+    {n:"Junk Journal Workshop",i:"Jess Kille",d:"Dec 10",iso:"2026-12-10",t:"Thu 4:30-6:30pm",sh:16,m:"paper",s:"junk",f:"one",v:["community","solo"],b:"Bring a journal or start fresh. A relaxed make-and-sip for paper people."},
+    {n:"Celestial Paper Ornaments",i:"Jess Kille",d:"Dec 19",iso:"2026-12-19",t:"Sat 9:00-11:00am",sh:9,m:"paper",s:"ornaments",f:"one",v:["solo","family"],b:"Pretty papers plus glitter plus ephemera equals celestial ornaments."},
+    {n:"Stylize Your Signature",i:"Katie Gorman",d:"Sep 14",iso:"2026-09-14",t:"Mon 6:30-8:00pm",sh:18,m:"paint",s:"letter",f:"one",v:["solo","social"],b:"Design a signature you enjoy signing. Hand-lettering, low pressure."},
+    {n:"Banner Painting",i:"Katie Gorman",d:"Sep 26",iso:"2026-09-26",t:"Sat 10:00am-12:00pm",sh:10,m:"paint",s:"letter",f:"one",v:["solo","social"],b:"Paint a banner worth hanging. Words, color, and personality."},
+    {n:"Watercolor Florals Series",i:"Katie Gorman",d:"Starts Oct 14",iso:"2026-10-14",t:"Wed 10:00am-12:00pm · 2 weeks",sh:10,m:"paint",s:"water",f:"series",v:["community","solo"],b:"Two mornings of loose, blooming watercolor flowers."},
+    {n:"Halloween Handlettering",i:"Katie Gorman",d:"Oct 29",iso:"2026-10-29",t:"Thu 6:30-8:30pm",sh:18,m:"paint",s:"letter",f:"one",v:["social","solo"],b:"Spooky-season lettering for cards, signs, and general witchiness."},
+    {n:"Intro to Watercolor",i:"Katie Gorman",d:"Nov 9",iso:"2026-11-09",t:"Mon 6:30-8:30pm",sh:18,m:"paint",s:"water",f:"one",v:["solo","social"],b:"Start from zero: washes, blending, and happy little accidents."},
+    {n:"Christmas Watercolor Class",i:"Katie Gorman",d:"Dec 7",iso:"2026-12-07",t:"Mon 6:30-8:30pm",sh:18,m:"paint",s:"water",f:"one",v:["solo","social"],b:"Paint holiday cards and scenes in soft, forgiving watercolor."},
+    {n:"Open Studio: Watercolor",i:"Katie Gorman",d:"First Wednesdays",iso:"2026-09-02",t:"Wed 10:00am-12:00pm · monthly",sh:10,m:"paint",s:"water",f:"one",v:["community","solo"],b:"Drop in, bring a project, paint alongside the regulars."},
+    {n:"Needlefelting Workshop",i:"Paige Davis",d:"Third Tuesdays",iso:"2026-09-22",t:"Tue 7:00-9:00pm · monthly",sh:19,m:"fiber",s:"felting",f:"one",v:["solo","community"],b:"Stab wool into something adorable. Oddly therapeutic. Runs monthly."},
+    {n:"Creators' Club",i:"The Everett",d:"Starts Oct 6",iso:"2026-10-06",t:"Tue 5:30-7:00pm · 4 weeks",sh:17,m:"seasonal",s:"family",f:"series",v:["family","community"],b:"An after-school making club for kids. Four weeks of new projects."},
+    {n:"Creators' Club",i:"The Everett",d:"Starts Nov 3",iso:"2026-11-03",t:"Tue 5:30-7:00pm · 4 weeks",sh:17,m:"seasonal",s:"family",f:"series",v:["family","community"],b:"An after-school making club for kids. Four weeks of new projects."},
+    {n:"Creators' Club",i:"The Everett",d:"Starts Dec 1",iso:"2026-12-01",t:"Tue 5:30-7:00pm · 3 weeks",sh:17,m:"seasonal",s:"family",f:"series",v:["family","community"],b:"An after-school making club for kids. Three weeks of new projects."}
+  ];
+
+  var CHIP = { paint:"#DE723A", jewelry:"#E0608F", paper:"#9A9A2E", fiber:"#4E9E97", wood:"#9A6A45", seasonal:"#C0553F" };
+  var CHIP_LABEL = { paint:"Paint", jewelry:"Jewelry", paper:"Paper", fiber:"Fiber", wood:"Wood & Glass", seasonal:"Seasonal" };
+
+  // Sub-style drill-down, keyed to the medium answer
+  var SUBQ = {
+    paint:{ prompt:"Which one is more you?", cols:2, options:[
+      {val:"real",   ic:"🐾", lab:"From life",        sub:"Pets, still life, a subject in front of you."},
+      {val:"water",  ic:"💧", lab:"Watercolor",       sub:"Loose, soft, forgiving."},
+      {val:"letter", ic:"✒️", lab:"Hand-lettering",   sub:"Signatures, banners, seasonal type."},
+      {val:"free",   ic:"🌀", lab:"Loose and intuitive", sub:"No plan, paint the mood."} ]},
+    jewelry:{ prompt:"What do you want to wear out?", cols:3, options:[
+      {val:"earrings",  ic:"👂", lab:"Earrings",   sub:"Beadwoven, seasonal, dangly."},
+      {val:"bracelets", ic:"📿", lab:"Bracelets",  sub:"Strung and stretch styles."},
+      {val:"other",     ic:"⛓️", lab:"Something else", sub:"Chainmail and beyond."} ]},
+    paper:{ prompt:"Which sounds more like you?", cols:2, options:[
+      {val:"junk",      ic:"📔", lab:"Junk journals",        sub:"One-signature books, built from scratch."},
+      {val:"altered",   ic:"📖", lab:"Altered books",        sub:"Turn an old book into something new."},
+      {val:"collage",   ic:"✂️", lab:"Collage and landscapes", sub:"Torn paper, layered scenes, keepsakes."},
+      {val:"ornaments", ic:"⭐", lab:"Paper ornaments",       sub:"Celestial and holiday hangings."} ]},
+    fiber:{ prompt:"Which is more your speed?", cols:3, options:[
+      {val:"embroidery", ic:"🪡", lab:"Embroidery",    sub:"Needle, thread, and a hoop."},
+      {val:"felting",    ic:"🐑", lab:"Needle felting", sub:"Stab wool into shape. Therapeutic."},
+      {val:"tufting",    ic:"🧶", lab:"Rug tufting",    sub:"The tufting gun. Yes, really."} ]},
+    wood:{ prompt:"Which material speaks to you?", cols:3, options:[
+      {val:"leather", ic:"🟫", lab:"Leather",       sub:"Stamping, tooling, stitching."},
+      {val:"carving", ic:"🔪", lab:"Wood carving",  sub:"Whittling and carved faces."},
+      {val:"glass",   ic:"🪟", lab:"Stained glass",  sub:"Cutting, foiling, soldering."} ]},
+    seasonal:{ prompt:"Who is it really for?", cols:2, options:[
+      {val:"decor",  ic:"🍂", lab:"My home",        sub:"Wreaths, gourds, mantel pieces."},
+      {val:"family", ic:"👧", lab:"Me and a kid",   sub:"Something we make together."} ]}
+  };
+
+  // Question flow. Q3 is filled dynamically from SUBQ[medium].
+  var QUESTIONS = [
+    { key:"vibe", label:"1 of 5", prompt:"Picture the drive home afterward. What made it worth it?", cols:2, options:[
+        {val:"solo",      ic:"🎧", lab:"A couple of hours that were finally mine", sub:"Quiet. Nobody needed anything."},
+        {val:"community", ic:"🫂", lab:"I clicked with people I'll see again",     sub:"The start of a little regular crew."},
+        {val:"family",    ic:"👩‍👧", lab:"My kid won't stop talking about it",        sub:"We made the thing together."},
+        {val:"social",    ic:"🍷", lab:"It felt like an actual night out",         sub:"Fun, a little buzzy, hands busy."} ]},
+    { key:"medium", label:"2 of 5", prompt:"Which compliment would you secretly love?", cols:3, options:[
+        {val:"paint",    ic:"🎨", lab:'"Wait, you painted that?"'},
+        {val:"jewelry",  ic:"💍", lab:'"Where did you get those earrings?"'},
+        {val:"paper",    ic:"📓", lab:'"You made this journal?"'},
+        {val:"fiber",    ic:"🧶", lab:'"So cozy. You made it?"'},
+        {val:"wood",     ic:"🪵", lab:'"You built that yourself?"'},
+        {val:"seasonal", ic:"🎃", lab:'"Your place looks amazing."'} ]},
+    { key:"sub", label:"3 of 5", dynamic:true },
+    { key:"format", label:"4 of 5", prompt:"A new hobby shows up in your life. It usually...", cols:3, options:[
+        {val:"one",    ic:"🌙", lab:"...is a fun one-time thing",     sub:"One evening, something finished to show for it."},
+        {val:"either", ic:"🤝", lab:"...depends if it really clicks", sub:"Could be a one-off, could be more."},
+        {val:"series", ic:"📅", lab:"...becomes a weekly ritual",     sub:"I like having it on the calendar."} ]},
+    { key:"avail", label:"5 of 5", prompt:"When does the you who makes things actually show up?", cols:2, options:[
+        {val:"day",     ic:"☀️", lab:"Weekday daytimes, house to myself", sub:"Before 5pm, Monday to Friday."},
+        {val:"eve",     ic:"🌆", lab:"Evenings, once the day winds down",  sub:"5pm or later."},
+        {val:"weekend", ic:"🗓️", lab:"Weekends, or not at all",           sub:"Saturday or Sunday."},
+        {val:"flex",    ic:"🙂", lab:"Honestly, I can flex",              sub:"Most times work."} ]}
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var splash=$('splash'), qScreen=$('questionScreen'), results=$('results');
+  var dotsEl=$('dots'), progressLabel=$('progressLabel');
+  var qLabel=$('qLabel'), qPrompt=$('qPrompt'), tilesEl=$('tiles'), backBtn=$('backBtn');
+  var state = { idx:0, answers:{} };
+
+  function show(name){
+    splash.classList.remove('active'); qScreen.classList.remove('active'); results.classList.remove('active');
+    ({splash:splash,question:qScreen,results:results})[name].classList.add('active');
+  }
+  function buildDots(){
+    dotsEl.innerHTML='';
+    for(var i=0;i<QUESTIONS.length;i++){
+      var d=document.createElement('div'); d.className='dot';
+      if(i<state.idx) d.classList.add('done'); else if(i===state.idx) d.classList.add('current');
+      dotsEl.appendChild(d);
+    }
+  }
+  function currentQuestion(){
+    var q=QUESTIONS[state.idx];
+    if(q.dynamic){
+      var sub=SUBQ[state.answers.medium];
+      return { key:q.key, label:q.label, prompt:sub.prompt, cols:sub.cols, options:sub.options };
+    }
+    return q;
+  }
+  function renderQuestion(){
+    var q=currentQuestion();
+    progressLabel.textContent='Question '+q.label;
+    qLabel.textContent='Question '+q.label;
+    qPrompt.textContent=q.prompt;
+    backBtn.disabled = state.idx===0;
+    buildDots();
+    tilesEl.className='tiles cols-'+q.cols;
+    tilesEl.innerHTML='';
+    q.options.forEach(function(o){
+      var b=document.createElement('button'); b.className='tile'; b.type='button';
+      if(state.answers[q.key]===o.val) b.classList.add('selected');
+      var html='<span class="ic">'+o.ic+'</span><span class="lab">'+o.lab+'</span>';
+      if(o.sub) html+='<span class="sub">'+o.sub+'</span>';
+      b.innerHTML=html;
+      b.addEventListener('click',function(){ pick(q.key,o.val,b); });
+      tilesEl.appendChild(b);
+    });
+    show('question');
+  }
+  function pick(key,val,el){
+    if(el.classList.contains('locked')) return;
+    state.answers[key]=val;
+    Array.prototype.forEach.call(tilesEl.children,function(c){ c.classList.remove('selected'); c.classList.add('locked'); });
+    el.classList.add('selected');
+    setTimeout(function(){
+      if(state.idx < QUESTIONS.length-1){ state.idx++; renderQuestion(); }
+      else showResults();
+    },230);
+  }
+  backBtn.addEventListener('click',function(){ if(state.idx>0){ state.idx--; renderQuestion(); } });
+
+  function isWeekend(iso){ var day=new Date(iso+'T12:00:00').getDay(); return day===0||day===6; }
+  function timeMatch(c,avail){
+    if(avail==='flex') return true;
+    if(avail==='eve') return c.sh>=17;
+    if(avail==='day') return c.sh<17 && !isWeekend(c.iso);
+    if(avail==='weekend') return isWeekend(c.iso);
+    return true;
+  }
+  function scoreClass(c,ans){
+    var s=0;
+    if(c.m===ans.medium) s+=4;
+    if(c.s===ans.sub) s+=3;
+    if(ans.format==='either') s+=1; else if(c.f===ans.format) s+=2;
+    if(c.v.indexOf(ans.vibe)!==-1) s+=2;
+    return s;
+  }
+
+  var TIMEWORD={day:"Daytime",eve:"Evening",weekend:"Weekend",flex:"Flexible"};
+  var MEDIUMNOUN={paint:"painter",jewelry:"jewelry maker",paper:"journal maker",fiber:"fiber artist",wood:"woodworker",seasonal:"seasonal crafter"};
+  var JOBLINE={
+    solo:"You want a few hours that belong to you. These are quiet enough to disappear into.",
+    community:"You want to walk in a stranger and leave a regular. These build a group around you.",
+    family:"You want time with someone you love, making something you both keep.",
+    social:"You want a real night out with your hands busy and a finished thing to take home."
+  };
+  var RECAP={
+    sub:{ real:"paint from life",water:"paint in watercolor",letter:"try hand-lettering",free:"paint loose and free",
+          earrings:"make earrings",bracelets:"make bracelets",other:"try chainmail",
+          junk:"make junk journals",altered:"make an altered book",collage:"make paper collage",ornaments:"make paper ornaments",
+          embroidery:"try embroidery",felting:"try needle felting",tufting:"try rug tufting",
+          leather:"work in leather",carving:"carve wood",glass:"make stained glass",
+          decor:"make decor for your home",family:"make something with a kid" },
+    format:{ one:"in a single evening",either:"one night or a series",series:"over a weekly series" },
+    avail:{ day:"on weekday daytimes",eve:"in the evenings",weekend:"on weekends",flex:"whenever it fits" }
+  };
+
+  function showResults(){
+    var ans=state.answers;
+    var relaxed=false;
+    var pool=CLASSES.filter(function(c){ return timeMatch(c,ans.avail); });
+    if(pool.length===0){ pool=CLASSES.slice(); relaxed=true; }
+
+    var scored=pool.map(function(c){ return {c:c,s:scoreClass(c,ans)}; });
+    var best={};
+    scored.forEach(function(x){
+      var k=x.c.n; var cur=best[k];
+      if(!cur || x.s>cur.s || (x.s===cur.s && x.c.iso<cur.c.iso)) best[k]=x;
+    });
+    var list=Object.keys(best).map(function(k){ return best[k]; });
+    list.sort(function(a,b){ return b.s-a.s || (a.c.iso<b.c.iso?-1:1); });
+    var top=list.slice(0,4);
+
+    $('resTitle').textContent = (relaxed?"Flexible":TIMEWORD[ans.avail]) + " " + MEDIUMNOUN[ans.medium];
+    $('resDiag').textContent = JOBLINE[ans.vibe];
+    $('resRecap').innerHTML = 'You want to <b>'+RECAP.sub[ans.sub]+'</b>, <b>'+RECAP.format[ans.format]+'</b>, <b>'+RECAP.avail[ans.avail]+'</b>.'
+      + (relaxed?' Nothing landed in that exact window, so here is the closest fit.':'');
+    $('resRightHead').textContent = 'Your matches, drawn from 50+ fall workshops';
+
+    var cards=$('cards'); cards.innerHTML='';
+    top.forEach(function(x,idx){
+      var c=x.c;
+      var a=document.createElement('a'); a.className='card';
+      a.href='https://theeverett.org/artworkshops'; a.target='_blank'; a.rel='noopener noreferrer';
+      a.innerHTML=
+        '<div class="toprow"><span class="chip" style="background:'+CHIP[c.m]+'">'+CHIP_LABEL[c.m]+'</span>'+
+          '<span class="seats">Register &#8599;</span></div>'+
+        '<span class="cname">'+c.n+'</span>'+
+        '<span class="cmeta">'+c.i+'  ·  '+c.d+'  ·  '+c.t+'</span>'+
+        '<span class="cblurb">'+c.b+'</span>';
+      cards.appendChild(a);
+    });
+    show('results');
+  }
+
+  $('startBtn').addEventListener('click',function(){ state.idx=0; state.answers={}; renderQuestion(); });
+  $('replayBtn').addEventListener('click',function(){ state.idx=0; state.answers={}; renderQuestion(); });
+  buildDots();
+})();
+</script>
+</body>
+</html>
