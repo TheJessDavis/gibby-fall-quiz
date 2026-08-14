@@ -291,7 +291,7 @@
   ];
 
   var CHIP = { paint:"#E0722C", jewelry:"#CE6E86", paper:"#B5872A", fiber:"#C4623A", wood:"#8A5A34", seasonal:"#B24A38" };
-  var CHIP_LABEL = { paint:"Paint", jewelry:"Jewelry", paper:"Paper", fiber:"Fiber", wood:"Wood & Glass", seasonal:"Seasonal" };
+  var CHIP_LABEL = { paint:"Paint", jewelry:"Jewelry", paper:"Paper", fiber:"Fiber", wood:"Wood, Leather & Glass", seasonal:"Seasonal" };
 
   // Sub-style drill-down, keyed to the medium answer
   var SUBQ = {
@@ -428,8 +428,9 @@
     if(ans.medium2 && c.m===ans.medium2) s+=2;
     if(c.s===ans.sub) s+=3;
     if(ans.format==='either') s+=1; else if(c.f===ans.format) s+=2;
-    if(ans.bold==='bold' && (c.m==='wood' || c.s==='tufting')) s+=2;
-    else if(ans.bold==='cozy' && (c.s==='free' || c.s==='water' || c.s==='junk' || c.s==='altered')) s+=2;
+    if(ans.bold==='cozy'  && (c.m==='paper' || c.s==='free' || c.s==='water' || c.s==='felting')) s+=3;
+    if(ans.bold==='skill' && (c.f==='series' || c.m==='wood' || c.m==='jewelry')) s+=3;
+    if(ans.bold==='bold'  && (c.m==='wood' || c.s==='tufting' || c.s==='other' || c.s==='glass')) s+=3;
     return s;
   }
 
